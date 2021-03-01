@@ -1,0 +1,44 @@
+import pandas as pd
+import numpy as np
+import gradient_descent
+
+
+# 1. uploading data + quick view data (784 px/ picture) -> total of 42.000 pictures (5000 -> otherwise the file is too big)
+training_data = pd.read_csv('data.csv')
+#print(training_data.head())
+m, n = training_data.shape
+print('The shape of the data: {} x {}'.format(m,n))
+
+# 2. Shaping the data
+
+data = np.array(training_data)
+m, n = data.shape
+np.random.shuffle(data) # shuffle before splitting into dev and training sets
+
+training_data = data[0:4500].T
+training_Y = training_data[0]
+training_X = (training_data[1:n] / 255.)
+n_tr,m_tr = training_X.shape
+
+test_data = data[4500:m].T
+test_Y = test_data[0]
+test_X = (test_data[1:n] / 255.)
+
+
+# 3. Training the network with the training data (alpha = 0,1 and 1000 iterations)
+# the calculations can be found in the file gradient_descent
+
+weight_1, bias_1, weight_2, bias_2 = gradient_descent.gradientdescent(training_X, training_Y, 0.10, 3001)
+
+
+# 4. Testing how well the network works on the unseen test data
+def Test_neuralnetwork(X, weight_1, bias_1, weight_2, bias_2):
+    Z1, a1, Z2, a2 = gradient_descent.propagation(weight_1, bias_1, weight_2, bias_2, X)
+
+    predictions = gradient_descent.outcome_network(a2)
+    return predictions
+
+
+dev_predictions = Test_neuralnetwork(test_X, weight_1, bias_1, weight_2, bias_2)
+
+gradient_descent.accuracy_neuralnetwork(dev_predictions, test_Y)
