@@ -1,0 +1,97 @@
+# calculations for training the neural network
+import pandas as pd
+import numpy as np
+
+m = 5000
+n = 785
+
+# 1. For propagation
+# A. assign the parameter a random value
+def parameters_neuralnetwork():
+    weight_1 = (np.random.rand(10, 784) - 0.5)
+    bias_1 = (np.random.rand(10, 1) - 0.5)
+
+    weight_2 = (np.random.rand(10, 10) - 0.5)
+    bias_2 = (np.random.rand(10, 1) - 0.5)
+    return weight_1, bias_1, weight_2, bias_2
+
+# B. Activation function that is going to be used (relu function is used)
+def activation_function(Z):
+    return np.maximum(0, Z)
+
+# C. Activation function that is used to weigh all outputs of the network (softmax function is used)
+def activation_function_outputLay(Z):
+    a = (np.exp(Z) / sum(np.exp(Z)))
+    return a
+
+# D. Forward propagation trough the network
+def propagation(weight_1, bias_1, weight_2, bias_2, X):
+    Z1 = weight_1.dot(X) + bias_1
+    a1 = activation_function(Z1)
+
+    Z2 = weight_2.dot(a1) + bias_2
+    a2 = activation_function_outputLay(Z2)
+    return Z1, a1, Z2, a2
+
+# 2. Backpropagation
+# A. Derivative of the activation function (B)
+def derivitive_activation_function(Z):
+    return Z > 0
+
+# B. Make the outcome of Y readable for the network
+def onehot_encoding(Y):
+    total = Y.size
+    Y_OH = np.zeros((total, (Y.max() + 1)))
+    Y_OH[np.arange(total), Y] = 1
+    return Y_OH.T
+
+# C. Backpropagation trough the network
+def backpropagation(Z1, a1, Z2, a2, weight_1, weight_2, X, Y):
+    Y_OH = onehot_encoding(Y)
+    derivative_Z2 = a2 - Y_OH
+    derivative_W2 = (1 / m * derivative_Z2.dot(a1.T))
+    derivative_bias_2 = (1 / m * np.sum(derivative_Z2))
+
+    derivative_Z1 = weight_2.T.dot(derivative_Z2) * derivitive_activation_function(Z1)
+    derivative_W1 = (1 / m * derivative_Z1.dot(X.T))
+    derivative_bias_1 = (1 / m * np.sum(derivative_Z1))
+    return derivative_W1, derivative_bias_1, derivative_W2, derivative_bias_2
+
+# D. After the backpropagation we update the weights and biases
+def new_parameters_neuralnetwork(weight_1, bias_1, weight_2, bias_2, derivative_W1, derivative_bias_1, derivative_W2, derivative_bias_2, alpha=0.1):
+    weight_1 = (weight_1 - (alpha * derivative_W1))
+    bias_1 = (bias_1 - (alpha * derivative_bias_1))
+
+    weight_2 = (weight_2 - (alpha * derivative_W2))
+    bias_2 = (bias_2 - (alpha * derivative_bias_2))
+    return weight_1, bias_1, weight_2, bias_2
+
+# 3. Results and calculations
+# A. Take the neuron that is triggered the hardest by the neural network (highest value)
+def outcome_network(a2):
+    return np.argmax(a2, 0)
+
+# B.
+def accuracy_neuralnetwork(outcome, Y):
+    total = Y.size
+    accuracy = (np.sum(outcome == Y) / total)
+    print('accuracy: ', accuracy)
+    return accuracy
+
+
+def gradientdescent(X, Y, alpha, iter):
+    weight_1, bias_1, weight_2, bias_2 = parameters_neuralnetwork()
+
+    for n in range(iter):
+        Z1, a1, Z2, a2 = propagation(weight_1, bias_1, weight_2, bias_2, X)
+        derivative_W1, derivative_bias_1, derivative_W2, derivative_bias_2 = backpropagation(Z1, a1, Z2, a2, weight_1, weight_2, X, Y)
+        weight_1, bias_1, weight_2, bias_2 = new_parameters_neuralnetwork(weight_1, bias_1, weight_2, bias_2, derivative_W1, derivative_bias_1, derivative_W2, derivative_bias_2, alpha)
+
+        if n % 50 == 0:
+            print("Number of iteration: ", n)
+            outcom = outcome_network(a2)
+            accuracy_neuralnetwork(outcom, Y)
+            print("_________________________________")
+
+    print('The accuracy of the test data in the neural network is:')
+    return weight_1, bias_1, weight_2, bias_2
